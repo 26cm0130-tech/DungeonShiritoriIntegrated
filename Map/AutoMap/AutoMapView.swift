@@ -29,7 +29,8 @@ struct AutoMapView: View {
                 switch map.cell(at: pos) {
                 case .sword:
                     floorColor = Color(red: 0.08, green: 0.24, blue: 0.38)
-                case .trap:
+                case .trap, .doubleFlickTrap, .hpDrainTrap, .warpToStartTrap,
+                     .randomWarpTrap, .keyFrontWarpTrap, .gameOverTrap, .unexplodedTrap:
                     floorColor = Color(red: 0.42, green: 0.15, blue: 0.10)
                 case .key:
                     floorColor = Color(red: 0.48, green: 0.34, blue: 0.08)
@@ -50,7 +51,7 @@ struct AutoMapView: View {
                 } else if map.cell(at: pos) == .sword {
                     let iconRect = r.insetBy(dx: cell * 0.20, dy: cell * 0.10)
                     drawPixelIcon(swordPixels, in: iconRect, context: &ctx, palette: swordPalette)
-                } else if map.cell(at: pos) == .trap {
+                } else if map.cell(at: pos).isTrap {
                     let iconRect = r.insetBy(dx: cell * 0.14, dy: cell * 0.14)
                     drawPixelIcon(trapPixels, in: iconRect, context: &ctx, palette: trapPalette)
                 }
@@ -85,11 +86,12 @@ struct AutoMapView: View {
                 if let symbol = map.cell(at: pos).mapSymbol,
                    pos != player.position,
                    map.cell(at: pos) != .key,
-                   map.cell(at: pos) != .trap,
+                   !map.cell(at: pos).isTrap,
                    map.cell(at: pos) != .enemy || !defeatedEnemies.contains(pos) {
                     let symbolColor: Color
                     switch map.cell(at: pos) {
-                    case .trap:
+                    case .trap, .doubleFlickTrap, .hpDrainTrap, .warpToStartTrap,
+                         .randomWarpTrap, .keyFrontWarpTrap, .gameOverTrap, .unexplodedTrap:
                         symbolColor = Color(red: 1.0, green: 0.66, blue: 0.46)
                     case .key:
                         symbolColor = Color(red: 1.0, green: 0.86, blue: 0.42)
