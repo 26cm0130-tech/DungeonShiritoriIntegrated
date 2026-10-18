@@ -21,6 +21,20 @@ enum TileEvents {
         switch cell {
         case .trap:
             return TrapEvent(kind: map.trapKinds[position] ?? .turnRight, map: map)
+        case .doubleFlickTrap:
+            return TrapEvent(kind: .doubleFlick, map: map)
+        case .hpDrainTrap:
+            return TrapEvent(kind: .hpDrain, map: map)
+        case .warpToStartTrap:
+            return TrapEvent(kind: .warpToStart, map: map)
+        case .randomWarpTrap:
+            return TrapEvent(kind: .randomWarp, map: map)
+        case .keyFrontWarpTrap:
+            return TrapEvent(kind: .warpBeforeKey, map: map)
+        case .gameOverTrap:
+            return TrapEvent(kind: .forceGameOver, map: map)
+        case .unexplodedTrap:
+            return TrapEvent(kind: .unexploded, map: map)
         case .sword: return SwordEvent()
         case .key:  return KeyEvent()
         case .enemy: return nil // 敵種はseedと座標からGameManagerが決める
