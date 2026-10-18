@@ -185,7 +185,7 @@ final class GameManager: ObservableObject {
             onBattleStateChanged?(battle.kind)
             enemyEncounterID += 1
         }
-        if cell == .trap {
+        if cell.isTrap {
             trapActivationID += 1
         }
         if newState.enemyBattle != nil {
