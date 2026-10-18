@@ -93,21 +93,31 @@ enum RandomMazeGenerator {
                 return routeToGoal.contains(position) ? nil : position
             }
         }
-        precondition(!trapCandidates.isEmpty, "ゴールへの経路外にトラップを置く通路がありません")
-        let trap = trapCandidates[random.nextInt(upperBound: trapCandidates.count)]
-        let trapGroup = TrapGroup.allCases[random.nextInt(upperBound: TrapGroup.allCases.count)]
-        let trapKind = selectTrap(in: trapGroup) {
-            random.nextInt(upperBound: 100) + 1
-        } ?? .unexploded
+        precondition(trapCandidates.count >= 3, "ゴールへの経路外にトラップを3個置く通路がありません")
 
-        // TはSからGへの最短経路外に置く。イベント記号の置換で通路の連結性は変わらない。
+        // 同じマスへの重複配置を防ぎ、最短経路外から3か所を選ぶ。
+        var availableTrapCandidates = trapCandidates
+        var traps: [GridPos: TrapKind] = [:]
+        for _ in 0..<3 {
+            let candidateIndex = random.nextInt(upperBound: availableTrapCandidates.count)
+            let position = availableTrapCandidates.remove(at: candidateIndex)
+            // ランダム迷宮ではPR13に合わせてグループA(状態変化)から抽選する。
+            let kind = selectTrap(in: .a) {
+                random.nextInt(upperBound: 100) + 1
+            } ?? .unexploded
+            traps[position] = kind
+        }
+
+        // 特殊マスの記号は通路の連結性に影響しない。
         cells[start.y][start.x] = "S"
         cells[sword.y][sword.x] = "W"
         cells[key.y][key.x] = "K"
         for enemy in enemies {
             cells[enemy.y][enemy.x] = "E"
         }
-        cells[trap.y][trap.x] = "T"
+        for (position, kind) in traps {
+            cells[position.y][position.x] = mapSymbol(for: kind)
+        }
         cells[goal.y][goal.x] = "G"
 
         let mapCells = cells.map { row in row.map { MapCell($0) } }
@@ -115,9 +125,22 @@ enum RandomMazeGenerator {
             cells: mapCells,
             startPosition: start,
             initialDirection: Direction(rawValue: random.nextInt(upperBound: 4)) ?? .north,
-            enemyKinds: enemyKinds,
-            trapKinds: [trap: trapKind]
+            enemyKinds: enemyKinds
         )
+    }
+
+    /// トラップの種類をマップ定義用の記号に変換する。
+    private static func mapSymbol(for kind: TrapKind) -> Character {
+        switch kind {
+        case .turnRight: return "T"
+        case .doubleFlick: return "F"
+        case .hpDrain: return "H"
+        case .warpToStart: return "U"
+        case .randomWarp: return "R"
+        case .warpBeforeKey: return "P"
+        case .forceGameOver: return "D"
+        case .unexploded: return "N"
+        }
     }
 
     private static func distances(from start: GridPos, in cells: [[Character]]) -> [GridPos: Int] {
