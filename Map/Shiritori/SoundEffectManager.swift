@@ -66,6 +66,14 @@ final class SoundEffectManager: NSObject, AVAudioPlayerDelegate {
         play(assetName: "shiritori_card_cursor_01")
     }
 
+    /// しりとりでカードを選んだ時の軽い触覚を返す。
+    /// CPUのスキャン移動ではなく、カード選択が確定した時に呼び出す。
+    func playCardSelectionHaptic() {
+        let generator = UISelectionFeedbackGenerator()
+        generator.prepare()
+        generator.selectionChanged()
+    }
+
     /// 画面上のボタン押下音を再生する。既存の短いUIカーソル音を共用する。
     func playButtonTap() {
         play(assetName: "shiritori_card_cursor_01")

@@ -379,6 +379,9 @@ final class ShiritoriGameManager {
             selectedCardID = id
             confirmedCardID = nil
 
+            // 選択カードを切り替えた時だけ軽い触覚を返す
+            SoundEffectManager.shared.playCardSelectionHaptic()
+
             // 別のカードへ選択を移動したときにカーソル音を再生する
             SoundEffectManager.shared.playCursor()
             return
@@ -756,6 +759,9 @@ final class ShiritoriGameManager {
         }) else {
             return
         }
+
+        // CPUのカード走査が終わり、選択カードを確定した時に1回だけ振動する
+        SoundEffectManager.shared.playCardSelectionHaptic()
 
         // 正規化後の末尾が「ん」ならCPU自滅
         if KanaNormalizer.endsWithN(targetVocabulary.word) {
