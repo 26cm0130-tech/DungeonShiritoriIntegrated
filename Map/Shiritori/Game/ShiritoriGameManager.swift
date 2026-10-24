@@ -266,7 +266,7 @@ final class ShiritoriGameManager {
         self.currentPrompt = nil
         self.selectedCardID = nil
         self.confirmedCardID = nil
-        self.playerTime = max(30, 90 + initialPlayerTimeBonusSeconds + playerTimeHPBonusSeconds - playerTimePenaltySeconds)
+        self.playerTime = max(30, 90 - playerTimePenaltySeconds) + playerTimeHPBonusSeconds + initialPlayerTimeBonusSeconds
 
         // CPU先攻状態を設定する。導入会話中は初期案内文を後回しにする
         self.turn = .cpu
