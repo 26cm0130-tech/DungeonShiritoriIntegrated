@@ -770,11 +770,15 @@ struct ShiritoriGameView: View {
                 // プレイヤーが正しくカードを取った際の悔しがり。判定は取得後の残り枚数で行う。
                 let framePrefix = remainingCardCount >= 13 ? "wrong1" : "wrong3"
                 let secondFrame = remainingCardCount >= 13 ? "wrong2" : "wrong4"
-                if elapsed < 0.5 { return "\(prefix)_\(framePrefix)" }
-                if elapsed < 1.0 { return "\(prefix)_\(secondFrame)" }
-                if elapsed < 1.5 { return "\(prefix)_\(framePrefix)" }
-                if elapsed < 2.0 { return "\(prefix)_\(secondFrame)" }
-                return trialIdleImage(prefix: prefix, elapsed: elapsed - 2.0)
+                let firstFrameDuration: TimeInterval = 0.5
+                let secondFrameDuration: TimeInterval = remainingCardCount >= 13 ? 0.5 : 1.0
+                let firstCycleDuration = firstFrameDuration + secondFrameDuration
+                let secondCycleDuration = firstCycleDuration * 2.0
+                if elapsed < firstFrameDuration { return "\(prefix)_\(framePrefix)" }
+                if elapsed < firstFrameDuration + secondFrameDuration { return "\(prefix)_\(secondFrame)" }
+                if elapsed < firstCycleDuration + firstFrameDuration { return "\(prefix)_\(framePrefix)" }
+                if elapsed < secondCycleDuration { return "\(prefix)_\(secondFrame)" }
+                return trialIdleImage(prefix: prefix, elapsed: elapsed - secondCycleDuration)
             }
         }
 
