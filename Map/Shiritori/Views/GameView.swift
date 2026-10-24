@@ -654,25 +654,25 @@ struct ShiritoriGameView: View {
                 }
                 return randomStageCPUIdleImage(at: elapsed - 3.0)
             } else {
-                // wrong3は0.5秒、wrong5は0.5秒、wrong6は1秒。2周後に通常待機へ戻す。
-                if elapsed < 4.0 {
-                    let phase = elapsed.truncatingRemainder(dividingBy: 2.0)
-                    if phase < 0.5 { return "\(prefix)_wrong3" }
-                    if phase < 1.0 { return "\(prefix)_wrong5" }
+                // wrong3・wrong6は各1秒、wrong5は0.5秒。2周後に通常待機へ戻す。
+                if elapsed < 5.0 {
+                    let phase = elapsed.truncatingRemainder(dividingBy: 2.5)
+                    if phase < 1.0 { return "\(prefix)_wrong3" }
+                    if phase < 1.5 { return "\(prefix)_wrong5" }
                     return "\(prefix)_wrong6"
                 }
-                return randomStageCPUIdleImage(at: elapsed - 4.0)
+                return randomStageCPUIdleImage(at: elapsed - 5.0)
             }
         }
     }
 
-    /// プレイヤー勝利時のCPU反応。wrong3は0.5秒、wrong5は0.5秒、wrong6は1秒で連続ループする。
+    /// プレイヤー勝利時のCPU反応。wrong3・wrong6を各1秒、wrong5を0.5秒で連続ループする。
     private func randomStageCPULowCardFailureAnimation(at date: Date) -> String {
         let startDate = gameManager.cpuAnimationEvent?.startedAt ?? characterAnimationEpoch
         let elapsed = max(0, date.timeIntervalSince(startDate))
-        let phase = elapsed.truncatingRemainder(dividingBy: 2.0)
-        if phase < 0.5 { return "character_cpu3_wrong3" }
-        if phase < 1.0 { return "character_cpu3_wrong5" }
+        let phase = elapsed.truncatingRemainder(dividingBy: 2.5)
+        if phase < 1.0 { return "character_cpu3_wrong3" }
+        if phase < 1.5 { return "character_cpu3_wrong5" }
         return "character_cpu3_wrong6"
     }
 
