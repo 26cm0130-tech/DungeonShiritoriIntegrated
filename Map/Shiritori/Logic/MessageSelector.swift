@@ -160,7 +160,7 @@ struct MessageSelector {
             return "\(baseMessage)\nさあ、『\(promptText)』から\nはじまるカードをえらぶザンス！"
         }
         if isRandomStage {
-            return "ほれ、「\(promptText)」やっ！"
+            return "\(baseMessage)\nほれ、「\(promptText)」やっ！"
         }
         return "\(baseMessage)\n「\(promptText)」から\nはじまるカードを選べ！"
     }
