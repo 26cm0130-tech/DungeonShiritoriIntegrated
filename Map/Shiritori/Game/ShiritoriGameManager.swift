@@ -1178,6 +1178,18 @@ final class ShiritoriGameManager {
         self.currentPrompt = currentPrompt
     }
 
+    /// 開始時に選ばれたCPU初手を、スキャン演出を省略して実際の取得処理へ渡す。
+    func runInitialCPUTurnWithoutScanForTesting() {
+        guard gameState == .cpuReaction,
+              cpuTargetCardID != nil,
+              cpuTargetVocabulary != nil else {
+            finishNoCPUTargetVictory()
+            return
+        }
+        gameState = .cpuTurn
+        acquireCPUCard()
+    }
+
     /// 2周のスキャンを待たず、CPU対象の決定から取得（または選べるカードなしの勝利）までを実行する。
     /// 分岐はadvanceCPUScanの終了処理と同じ。
     func runCPUTurnWithoutScanForTesting() {
