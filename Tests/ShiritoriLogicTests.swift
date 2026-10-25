@@ -314,6 +314,31 @@ enum ShiritoriLogicTests {
         try expect(normalWords.count == 25, "通常版: 全カードに通常読みがある")
         try expect(normalWords.allSatisfy { !KanaNormalizer.endsWithN($0) }, "通常版: 通常読みは「ん」で終わらない")
         try expect(normalWordsFormOneLoop(normalWords), "通常版: 通常読みの接続が25枚で一巡できる")
+
+        // デッキ全体の読みの接続性を数値化し、ランダムステージ用デッキの比較材料を出す。
+        // これは全読みを使った静的指標であり、実対戦の残り枚数を保証するものではない。
+        let normalMetrics = deckConnectivityMetrics(CardData.cards)
+        let trialMetrics = deckConnectivityMetrics(CardData2.cards)
+        print("DECK-COMPARE CardData: readings=\(normalMetrics.readings), nEnding=\(normalMetrics.nEnding), deadEndReadings=\(normalMetrics.deadEnds), avgFollowUps=\(String(format: "%.2f", normalMetrics.averageFollowUps))")
+        print("DECK-COMPARE CardData2: readings=\(trialMetrics.readings), nEnding=\(trialMetrics.nEnding), deadEndReadings=\(trialMetrics.deadEnds), avgFollowUps=\(String(format: "%.2f", trialMetrics.averageFollowUps))")
+    }
+
+    private static func deckConnectivityMetrics(_ cards: [Card]) -> (readings: Int, nEnding: Int, deadEnds: Int, averageFollowUps: Double) {
+        let words = cards.flatMap { $0.vocabularies.map(\.word) }
+        let startingCharacters = words.compactMap { KanaNormalizer.firstCharacter(of: $0) }
+        let startingCounts = startingCharacters.reduce(into: [Character: Int]()) { counts, character in
+            counts[character, default: 0] += 1
+        }
+        let followUpCounts = words.compactMap { KanaNormalizer.lastCharacter(of: $0) }.map {
+            startingCounts[$0, default: 0]
+        }
+        let deadEnds = followUpCounts.filter { $0 == 0 }.count
+        return (
+            readings: words.count,
+            nEnding: words.filter { KanaNormalizer.endsWithN($0) }.count,
+            deadEnds: deadEnds,
+            averageFollowUps: followUpCounts.isEmpty ? 0 : Double(followUpCounts.reduce(0, +)) / Double(followUpCounts.count)
+        )
     }
 
     /// 各語を「先頭文字→末尾文字」の辺とみなし、全辺を使う閉じた経路があるか（次数の釣り合いと連結）を確かめる。
