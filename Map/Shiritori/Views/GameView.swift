@@ -609,7 +609,11 @@ struct ShiritoriGameView: View {
             switch result {
             case .playerLoseTimeout, .playerLoseN:
                 return randomStageCPUWinAnimation(at: date)
-            case .playerWinAllCards, .playerWinNoCPUTarget, .playerWinCPUN:
+            case .playerWinAllCards:
+                // プレイヤーが25枚を使い切った場合も、CPUが最後のカードを出し切る特殊エンディングも、
+                // CPU3は正解ループを続け、相手の実力を認める。
+                return randomStageCPUWinAnimation(at: date)
+            case .playerWinNoCPUTarget, .playerWinCPUN:
                 return randomStageCPULowCardFailureAnimation(at: date)
             case .playerWinTimeoutMercy:
                 // 上で通常待機へ振り分け済み。
