@@ -406,6 +406,7 @@ enum ShiritoriGameManagerTests {
             fallback.gameResult == .playerWinCPUN && !isCleared(fallback, onlyN),
             "非「ん」終わり候補がなければ「ん」終わりへフォールバック"
         )
+    }
 
     // MARK: - デッキ比較シミュレーション（ランダムステージの実ゲーム管理処理）
     private struct MatchSummary {
