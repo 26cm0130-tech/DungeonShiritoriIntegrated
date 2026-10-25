@@ -17,6 +17,7 @@ enum ShiritoriGameManagerTests {
         try testCPUTurn()
         try testStageDifferences()
         try testRandomStageSelection()
+        try runDeckMatchComparison()
         print("PASS: ShiritoriGameManagerの開始・選択・判定・時間切れ・CPU取得 (\(count) assertions)")
         return count
     }
@@ -405,5 +406,70 @@ enum ShiritoriGameManagerTests {
             fallback.gameResult == .playerWinCPUN && !isCleared(fallback, onlyN),
             "非「ん」終わり候補がなければ「ん」終わりへフォールバック"
         )
+
+    // MARK: - デッキ比較シミュレーション（ランダムステージの実ゲーム管理処理）
+    private struct MatchSummary {
+        var remainingTotal = 0
+        var fullClearCount = 0
+        var games = 0
+        var reasons: [String: Int] = [:]
+    }
+
+    private static func runDeckMatchComparison() throws {
+        let rounds = 100
+        let normal = simulateDeck(CardData.cards, rounds: rounds)
+        let trial = simulateDeck(CardData2.cards, rounds: rounds)
+        print("MATCH-COMPARE policy=最初に見つかった接続可能カードを選択（VocabularySelectorの現行ルール）, no-legal-move=即時タイムアウト, rounds=\(rounds)")
+        print("MATCH-COMPARE CardData: games=\(normal.games), avgRemaining=\(String(format: "%.2f", Double(normal.remainingTotal) / Double(rounds))), fullClear=\(normal.fullClearCount)/\(rounds), reasons=\(normal.reasons)")
+        print("MATCH-COMPARE CardData2: games=\(trial.games), avgRemaining=\(String(format: "%.2f", Double(trial.remainingTotal) / Double(rounds))), fullClear=\(trial.fullClearCount)/\(rounds), reasons=\(trial.reasons)")
+    }
+
+    private static func simulateDeck(_ deck: [Card], rounds: Int) -> MatchSummary {
+        var summary = MatchSummary()
+        for _ in 0..<rounds {
+            let manager = started(deck, isRandomStage: true)
+            // startGameが実際のランダムステージ初手を決めた状態を維持してCPU取得を実行。
+            manager.runInitialCPUTurnWithoutScanForTesting()
+            var guardTurns = 0
+            while manager.gameResult == nil && guardTurns < 60 {
+                guardTurns += 1
+                if manager.gameState == .playerTurn {
+                    let prompt = manager.currentPrompt
+                    let legal = manager.cards.filter { card in
+                        !card.isCleared && card.vocabularies.contains { vocab in
+                            KanaNormalizer.firstCharacter(of: vocab.word) == prompt
+                        }
+                    }
+                    guard let target = legal.first else {
+                        manager.decreasePlayerTime(by: manager.playerTime)
+                        break
+                    }
+                    manager.selectCard(id: target.id)
+                    manager.selectCard(id: target.id)
+                    manager.confirmSelectedCard()
+                } else if manager.gameState == .cpuReaction || manager.gameState == .cpuTurn {
+                    manager.runCPUTurnWithoutScanForTesting()
+                } else {
+                    break
+                }
+            }
+            summary.games += 1
+            let remaining = manager.cards.filter { !$0.isCleared }.count
+            summary.remainingTotal += remaining
+            if remaining == 0 { summary.fullClearCount += 1 }
+            let reason: String
+            switch manager.gameResult {
+            case .playerWinAllCards: reason = "全取得"
+            case .playerWinNoCPUTarget: reason = "CPU接続不能"
+            case .playerWinCPUN: reason = "CPUが「ん」"
+            case .playerWinTimeoutMercy: reason = "時間切れ特別勝利"
+            case .playerLoseTimeout: reason = "時間切れ敗北"
+            case .playerLoseN: reason = "プレイヤーが「ん」"
+            case .none: reason = "ターン上限"
+            }
+            summary.reasons[reason, default: 0] += 1
+        }
+        return summary
+    }
     }
 }
