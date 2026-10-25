@@ -472,5 +472,4 @@ enum ShiritoriGameManagerTests {
         }
         return summary
     }
-    }
 }
