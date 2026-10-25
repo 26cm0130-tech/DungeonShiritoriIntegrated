@@ -1198,6 +1198,8 @@ final class ShiritoriGameManager {
             finishNoCPUTargetVictory()
             return
         }
+        // advanceCPUScan() と同様、対象カードの取得前にCPUターンへ遷移する。
+        gameState = .cpuTurn
         acquireCPUCard()
     }
 #endif
