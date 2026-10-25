@@ -67,8 +67,8 @@ struct EnemyBattleView: View {
                         .foregroundStyle(Color(red: 1.0, green: 0.83, blue: 0.24))
                         .shadow(color: Color(red: 0.98, green: 0.12, blue: 0.08), radius: 7)
                         .shadow(color: .black, radius: 3, y: 2)
-                        .offset(y: damageLabelOffset - 42)
-                        .position(x: geometry.size.width * 0.5, y: geometry.size.height * 0.36)
+                        .offset(y: damageLabelOffset - 12)
+                        .position(x: geometry.size.width * 0.5, y: geometry.size.height * 0.82)
                         .transition(.scale.combined(with: .opacity))
                         .accessibilityHidden(true)
                 }
