@@ -10,6 +10,8 @@ struct DungeonView: View {
     let hasKey: Bool
     let isGoalReached: Bool
     let defeatedEnemyKinds: [GridPos: EnemyKind]
+    /// 大きい敗北画像として別描画するため、床面への小さい描画を省略する位置。
+    let largeDefeatGraphicPosition: GridPos?
     let activatedTrapPositions: Set<GridPos>
 
     /// 描画する最大の奥行き(マス数)。仕様書§12.5
@@ -361,7 +363,8 @@ struct DungeonView: View {
                         drawTrapMark(trapKind, on: floorCorners)
                     }
 
-                    if let defeatedKind = defeatedEnemyKinds[tilePosition] {
+                    if tilePosition != largeDefeatGraphicPosition,
+                       let defeatedKind = defeatedEnemyKinds[tilePosition] {
                         drawDefeatedEnemy(defeatedKind, on: floorCorners)
                     }
 
