@@ -21,6 +21,8 @@ final class GameManager: ObservableObject {
     @Published private(set) var defeatedEnemySpeech: EnemyDefeatSpeech?
     /// 撃破セリフの表示中に限り、大きい敗北画像を表示するための敵種。
     @Published private(set) var defeatedEnemyLargeGraphicKind: EnemyKind?
+    /// 大きい敗北画像を表示している敵のマップ上の位置。
+    @Published private(set) var defeatedEnemyLargeGraphicPosition: GridPos?
     @Published private(set) var pendingSkeletonDrop: SkeletonDropItem?
     /// 剣を落とす敵を倒した直後、撃破セリフが終わるまで取得を待っている状態。
     @Published private(set) var pendingSwordDrop: EnemyKind?
@@ -196,6 +198,7 @@ final class GameManager: ObservableObject {
         newState.mapStepCount += 1
         // 実際に1マス移動した時点で、大きい敗北画像を解除する。
         defeatedEnemyLargeGraphicKind = nil
+        defeatedEnemyLargeGraphicPosition = nil
         newState.explored.insert(next)
         if cell.isTrap {
             newState.activatedTrapPositions.insert(next)
@@ -333,6 +336,7 @@ final class GameManager: ObservableObject {
             newState.defeatedEnemies.insert(battle.enemyPosition)
             newState.defeatedEnemyKinds[battle.enemyPosition] = battle.kind
             defeatedEnemyLargeGraphicKind = battle.kind
+            defeatedEnemyLargeGraphicPosition = battle.enemyPosition
             newState.enemyBattle = nil
             newState.message = "敵を倒した！探索を続けよう。"
             if battle.kind == .skeleton,
@@ -477,6 +481,7 @@ final class GameManager: ObservableObject {
         defeatedEnemySpeechTask = nil
         defeatedEnemySpeech = nil
         defeatedEnemyLargeGraphicKind = nil
+        defeatedEnemyLargeGraphicPosition = nil
         pendingDefeatedEnemyKind = nil
         encounterEnemySpeechID += 1
         let presentation = EnemyEncounterSpeech(
@@ -514,6 +519,7 @@ final class GameManager: ObservableObject {
                   self.defeatedEnemySpeech?.id == presentation.id else { return }
             self.defeatedEnemySpeech = nil
             self.defeatedEnemyLargeGraphicKind = nil
+            self.defeatedEnemyLargeGraphicPosition = nil
             self.defeatedEnemySpeechTask = nil
         }
     }
