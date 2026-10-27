@@ -162,6 +162,7 @@ struct PlayView: View {
                 hasKey: game.state.hasKey,
                 isGoalReached: game.state.isCleared,
                 defeatedEnemyKinds: game.state.defeatedEnemyKinds,
+                largeDefeatGraphicPosition: game.defeatedEnemyLargeGraphicPosition,
                 activatedTrapPositions: game.state.activatedTrapPositions
             )
             .overlay {
