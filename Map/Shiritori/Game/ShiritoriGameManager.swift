@@ -497,8 +497,8 @@ final class ShiritoriGameManager {
         startPlayerAnimation(.success)
 
         // 正解したカードの取得時にPLAYER TIMEを5秒回復する
-        // 持ち時間の上限は90秒とする
-        playerTime = min(90, playerTime + 5)
+        // 持ち時間に上限を設けず、5秒加算する
+        playerTime += 5
 
         // プレイヤー取得メッセージを作成する
         currentMessage = MessageSelector.playerMessage(
