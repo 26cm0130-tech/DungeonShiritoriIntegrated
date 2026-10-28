@@ -1,15 +1,20 @@
-# Firebase cross-device leaderboard setup
+# Firebaseで機種間共有するランキングの設定
 
-The app stores the `trial` and `random` TOP 100 lists in Cloud Firestore. It signs players in anonymously, so no sign-in screen is needed. Each installation can edit the names on its own records.
+アプリは「試練の迷宮」と「ランダムステージ」のTOP 100をCloud Firestoreに保存します。匿名認証を使うため、プレイヤーのログイン画面は不要です。各端末から、自分が登録した記録の名前を変更できます。
 
-## Firebase Console
+## Firebase Consoleでの設定
 
-1. Confirm the iOS app registration matches the bundle identifier in `GoogleService-Info.plist`.
-2. Enable **Authentication → Sign-in method → Anonymous**.
-3. Create a **Cloud Firestore** database.
-4. Deploy `firestore.rules` and `firestore.indexes.json` (Firebase CLI: `firebase deploy --only firestore:rules,firestore:indexes`).
-5. Confirm App Check is configured before enabling enforcement for production traffic.
+1. iOSアプリの登録情報と `GoogleService-Info.plist` のBundle IDが一致していることを確認します。
+2. **Authentication → Sign-in method → Anonymous** を有効にします。
+3. **Cloud Firestore** データベースを作成します。
+4. Firebase CLIで `firestore.rules` と `firestore.indexes.json` をデプロイします。
 
-The project includes the Firebase Auth and Firestore Swift Package products and the app calls `FirebaseApp.configure()` at launch. Keep `GoogleService-Info.plist` in the application target resources for builds on other devices.
+   ```sh
+   firebase deploy --only firestore:rules,firestore:indexes
+   ```
 
-The client enforces the TOP 100 query and rules restrict score creation to authenticated users, owner-only name changes, and server timestamps. A client-provided clear time is still not proof of gameplay; use a trusted game server or callable Cloud Function if tamper-resistant scores are required.
+5. 本番環境でApp Checkの強制を有効にする前に、App Checkを設定してください。
+
+プロジェクトにはFirebase AuthとFirestoreのSwift Packageが含まれており、アプリ起動時に `FirebaseApp.configure()` を呼び出します。他の端末でビルドする場合も、`GoogleService-Info.plist` をアプリターゲットのリソースに含めてください。
+
+アプリはFirestoreから上位100件を取得します。セキュリティルールにより、認証済みユーザーだけが記録を作成でき、名前を変更できるのは記録の所有者だけです。登録日時にはサーバー時刻を使います。ただしクリアタイム自体はアプリから送信されるため、改ざんを防ぐ保証はありません。改ざんに強いランキングが必要な場合は、信頼できるゲームサーバーやCallable Cloud Functionでスコアを検証してください。
