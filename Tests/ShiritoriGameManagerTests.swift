@@ -154,7 +154,7 @@ enum ShiritoriGameManagerTests {
 
         try expect(isCleared(manager, first) && manager.cards.filter(\.isCleared).count == 1, "接続できたカードだけ取得")
         try expect(manager.currentPrompt == "め", "次の要求文字は取得した読みの末尾")
-        try expect(manager.playerTime == 90, "成功で5秒回復し、上限は90秒")
+        try expect(manager.playerTime == 93, "88秒から5秒回復して93秒になる（90秒上限なし）")
         try expect(manager.gameState == .cpuReaction && manager.gameResult == nil, "成功後はCPUのターンへ")
         try expect(manager.selectedCardID == nil && manager.confirmedCardID == nil, "選択状態は解除される")
         try expect(manager.cpuTargetCardID == nil, "CPUの対象は取得後に初期化")
@@ -171,6 +171,13 @@ enum ShiritoriGameManagerTests {
         recovering.decreasePlayerTime(by: 20)
         play(recovering, c1)
         try expect(recovering.playerTime == 75, "70秒から5秒回復")
+
+        // 90秒を超えていても、成功時の5秒回復に上限を設けない。
+        let overCapCard = card([vocab("あめ")])
+        let overCap = started([overCapCard, card([vocab("めだか")])], bonus: 20)
+        enterPlayerTurn(overCap, prompt: "あ")
+        play(overCap, overCapCard)
+        try expect(overCap.playerTime == 115, "110秒から成功で5秒回復して115秒になる")
 
         // 末尾の濁音は清音として次の要求文字になる。
         let x = card([vocab("かば")])
