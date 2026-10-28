@@ -36,6 +36,9 @@ struct CoreLogicTests {
         try testLeaderboardNameUpdate()
         print("PASS: 名前更新時の記録情報維持")
 
+        try testLeaderboardSubmissionValidation()
+        print("PASS: ランキング登録データの検証")
+
         try testAudioVolumeSettings()
         print("PASS: 音量設定の初期値・範囲補正・保存")
 
@@ -330,6 +333,21 @@ struct CoreLogicTests {
             try expect(updated.recordedAt == original.recordedAt, "登録日時を維持")
             try expect(updated.seed == original.seed, "seedを維持")
         }
+    }
+
+    private static func testLeaderboardSubmissionValidation() throws {
+        let valid = LeaderboardEntry(playerName: "冒険者", clearTime: 12.5, seed: 42)
+        try expect(valid.isValidForSubmission, "有効なランキング記録を受け入れる")
+        try expect(LeaderboardEntry.cleanedPlayerName("  冒険者  ") == "冒険者", "名前の前後空白を除く")
+        try expect(LeaderboardEntry.cleanedPlayerName(" \n ") == nil, "空の名前を拒否")
+        try expect(
+            !LeaderboardEntry(playerName: "冒険者", clearTime: .infinity, seed: nil).isValidForSubmission,
+            "無限のクリアタイムを拒否"
+        )
+        try expect(
+            !LeaderboardEntry(playerName: "冒険者", clearTime: -1, seed: nil).isValidForSubmission,
+            "負のクリアタイムを拒否"
+        )
     }
 
     private static func testAudioVolumeSettings() throws {

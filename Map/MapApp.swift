@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreText
+import FirebaseCore
 
 /// 画面全体の文字サイズをまとめて調整する。
 enum DungeonTypography {
@@ -28,6 +29,9 @@ enum DungeonTypography {
 @main
 struct MapApp: App {
     init() {
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
         guard let fontURL = Bundle.main.url(forResource: "x12y16pxMaruMonica", withExtension: "ttf") else { return }
         CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, nil)
     }

@@ -33,6 +33,17 @@ struct LeaderboardEntry: Codable, Identifiable {
         self.recordedAt = recordedAt
         self.seed = seed
     }
+
+    static func cleanedPlayerName(_ name: String) -> String? {
+        let value = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(16))
+        return value.isEmpty ? nil : value
+    }
+
+    var isValidForSubmission: Bool {
+        guard Self.cleanedPlayerName(playerName) == playerName,
+              clearTime.isFinite, clearTime >= 0, clearTime < 86_400 else { return false }
+        return true
+    }
 }
 
 enum LocalLeaderboard {
