@@ -342,6 +342,7 @@ struct MonsterMessageView: View {
         maximum: Int,
         color: Color
     ) -> some View {
+        let isLowHP = current > 0 && current <= 13
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 3) {
                 if let name {
@@ -351,7 +352,7 @@ struct MonsterMessageView: View {
                 Text("\(current)/\(maximum)").monospacedDigit()
             }
             .font(DungeonTypography.maruMonica(size: isPad ? 14 : 10))
-            .foregroundStyle(.white.opacity(0.92))
+            .foregroundStyle(isLowHP ? Color.yellow : Color.white.opacity(0.92))
             GeometryReader { geometry in
                 let safeMaximum = max(1, maximum)
                 let currentWidth = geometry.size.width * CGFloat(max(0, min(current, safeMaximum))) / CGFloat(safeMaximum)
@@ -372,7 +373,14 @@ struct MonsterMessageView: View {
             }
             .frame(height: isPad ? (battle == nil ? 11 : 20) : 6)
         }
+        .padding(4)
         .frame(maxWidth: .infinity)
+        .overlay {
+            if isLowHP {
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color.red, lineWidth: 2)
+            }
+        }
     }
 
     /// HP減少時は残像の幅を1.2秒かけて縮め、回復時は残像を解除する。
