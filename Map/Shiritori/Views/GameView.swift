@@ -62,6 +62,12 @@ struct ShiritoriGameView: View {
     // 導入会話の現在位置（0から2まで）
     @State private var openingDialogueIndex = 0
 
+    // ランダムステージのCPU1→CPU3切り替え演出（メッセージ1完了後の1秒間）
+    @State private var isRandomCPUTransitionActive = false
+    @State private var randomCPUTransitionStartedAt: Date?
+    @State private var randomCPUTransitionImageName: String?
+    @State private var randomCPUTransitionTimer: Timer?
+
     // PLAYER敗北用BGMが同じ対局内で重複再生されないようにする
     @State private var defeatBGMPlayed = false
 
@@ -234,19 +240,29 @@ struct ShiritoriGameView: View {
                         // MARK: - 上部：CPU画像・残り枚数・次の文字
 
                         HStack(alignment: .center, spacing: 8) {
-                            // CPU画像を大きく表示する
-                            Image(sharedCharacterAssetName(for: characterImage(
-                                prefix: isTrialStage ? "character_cpu2" : "character_cpu",
-                                event: gameManager.cpuAnimationEvent,
-                                at: now,
-                                isPlayer: false
-                            )))
-                                .resizable()
-                                .scaledToFit()
+                                        // CPU画像を大きく表示する。ランダムステージの切り替え中だけCPU1を左右分割して消滅させる。
+                            if isRandomCPUTransitionActive,
+                               let transitionImageName = randomCPUTransitionImageName {
+                                RandomCPUSplitTransitionView(
+                                    imageName: transitionImageName,
+                                    elapsed: max(0, now.timeIntervalSince(randomCPUTransitionStartedAt ?? now))
+                                )
                                 .frame(width: cpuCharacterSize, height: cpuCharacterSize)
                                 .scaleEffect(characterDisplayScale)
-                                // CPU2の元画像は画面端で見切れやすいため、試練ステージだけ表示を90%に縮小する。
-                                .scaleEffect(isTrialStage ? 0.9 : 1.0)
+                            } else {
+                                Image(sharedCharacterAssetName(for: characterImage(
+                                    prefix: isTrialStage ? "character_cpu2" : "character_cpu",
+                                    event: gameManager.cpuAnimationEvent,
+                                    at: now,
+                                    isPlayer: false
+                                )))
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: cpuCharacterSize, height: cpuCharacterSize)
+                                    .scaleEffect(characterDisplayScale)
+                                    // CPU2の元画像は画面端で見切れやすいため、試練ステージだけ表示を90%に縮小する。
+                                    .scaleEffect(isTrialStage ? 0.9 : 1.0)
+                            }
 
                             // 上段に「残り枚数」「次の文字」、その下段中央にCPUを表示する
                             VStack(spacing: 8) {
@@ -357,6 +373,8 @@ struct ShiritoriGameView: View {
             .onDisappear {
                 finishTransitionTimer?.invalidate()
                 finishTransitionTimer = nil
+                randomCPUTransitionTimer?.invalidate()
+                randomCPUTransitionTimer = nil
                 hintRotationTimer?.invalidate()
                 hintRotationTimer = nil
             }
@@ -389,6 +407,30 @@ struct ShiritoriGameView: View {
         )
     }
 
+    // CPU1の分割消滅が完了してから、導入メッセージ2へ進める。
+    private func beginRandomCPUTransition() {
+        guard isRandomStage, !isRandomCPUTransitionActive else { return }
+
+        randomCPUTransitionTimer?.invalidate()
+        let now = Date()
+        randomCPUTransitionImageName = sharedCharacterAssetName(for: characterImage(
+            prefix: "character_cpu",
+            event: gameManager.cpuAnimationEvent,
+            at: now,
+            isPlayer: false
+        ))
+        randomCPUTransitionStartedAt = now
+        isRandomCPUTransitionActive = true
+
+        randomCPUTransitionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
+            randomCPUTransitionTimer = nil
+            isRandomCPUTransitionActive = false
+            randomCPUTransitionStartedAt = nil
+            randomCPUTransitionImageName = nil
+            openingDialogueIndex = 1
+        }
+    }
+
     // 上段・下段のヒントを独立して5秒ごとに切り替える
     private func startHintRotation() {
         hintRotationTimer?.invalidate()
@@ -409,6 +451,11 @@ struct ShiritoriGameView: View {
             }
 
             if openingDialogueIndex < openingDialogueMessages.count - 1 {
+                // ランダムステージでは、メッセージ1の終了後にCPU1を1秒かけて消滅させてからCPU3とメッセージ2を出す。
+                if isRandomStage && openingDialogueIndex == 0 {
+                    beginRandomCPUTransition()
+                    return
+                }
                 openingDialogueIndex += 1
             } else {
                 // 3つ目は一気に表示したあと5秒保持し、その後CPU先攻を開始する
@@ -965,6 +1012,45 @@ struct ShiritoriGameView: View {
     // カード取得のたびにShiritoriGameManager.cardsのisClearedを参照して表示を更新する
     private var remainingCardCount: Int {
         gameManager.cards.filter { !$0.isCleared }.count
+    }
+}
+
+// CPU1を左右に分割し、点滅しながら外側へ離れて1秒で消える登場切り替え演出。
+private struct RandomCPUSplitTransitionView: View {
+    let imageName: String
+    let elapsed: TimeInterval
+
+    var body: some View {
+        GeometryReader { geometry in
+            let progress = min(1, max(0, elapsed))
+            let halfWidth = geometry.size.width / 2
+            let offset = geometry.size.width * 0.55 * progress
+            // 0.12秒周期で点滅し、終端の1秒でCPU3へ切り替える。
+            let isVisible = elapsed < 0.16 || Int(elapsed / 0.12) % 2 == 0
+
+            ZStack {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .mask(alignment: .leading) {
+                        Rectangle().frame(width: halfWidth)
+                    }
+                    .offset(x: -offset)
+
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .mask(alignment: .trailing) {
+                        Rectangle().frame(width: halfWidth)
+                    }
+                    .offset(x: offset)
+            }
+            .opacity(isVisible ? 1 : 0)
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
+        }
     }
 }
 
