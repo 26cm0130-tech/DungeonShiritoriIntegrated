@@ -240,7 +240,7 @@ struct ShiritoriGameView: View {
                         // MARK: - 上部：CPU画像・残り枚数・次の文字
 
                         HStack(alignment: .center, spacing: 8) {
-                                        // CPU画像を大きく表示する。ランダムステージの切り替え中だけCPU1を左右分割して消滅させる。
+                            // CPU画像を大きく表示する。ランダムステージの切り替え中だけCPU1を左右分割して消滅させる。
                             if isRandomCPUTransitionActive,
                                let transitionImageName = randomCPUTransitionImageName {
                                 RandomCPUSplitTransitionView(
