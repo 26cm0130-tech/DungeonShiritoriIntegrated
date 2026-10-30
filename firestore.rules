@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leaderboards/{mode}/entries/{entryID} {
+      function isValidMode() {
+        return mode in ['trial', 'random'];
+      }
+
+      function isValidName(name) {
+        return name is string && name.size() > 0 && name.size() <= 16;
+      }
+
+      allow read: if request.auth != null && isValidMode();
+
+      allow create: if request.auth != null
+        && isValidMode()
+        && request.resource.data.keys().hasOnly(['ownerUID', 'playerName', 'clearTime', 'recordedAt', 'seed'])
+        && request.resource.data.ownerUID == request.auth.uid
+        && isValidName(request.resource.data.playerName)
+        && request.resource.data.clearTime is number
+        && request.resource.data.clearTime >= 0
+        && request.resource.data.clearTime < 86400
+        && request.resource.data.recordedAt == request.time
+        && (!('seed' in request.resource.data) || request.resource.data.seed is string);
+
+      allow update: if request.auth != null
+        && isValidMode()
+        && resource.data.ownerUID == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerName'])
+        && isValidName(request.resource.data.playerName);
+
+      allow delete: if false;
+    }
+  }
+}
