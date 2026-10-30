@@ -490,15 +490,28 @@ final class AppFlow: ObservableObject {
         guard let cleanName = LeaderboardEntry.cleanedPlayerName(playerName) else { return nil }
         let entry = LeaderboardEntry(playerName: cleanName, clearTime: currentRunTime, seed: game?.stage.seed)
         guard entry.isValidForSubmission else { return nil }
-        leaderboardEntries = try await FirebaseLeaderboardStore.shared.submit(entry, to: currentLeaderboardMode)
-        _ = LocalLeaderboard.add(entry, to: currentLeaderboardMode)
+
+        // Firebaseが利用できれば共有ランキングへ送信し、失敗・未設定なら従来どおり端末内へ保存する。
+        do {
+            let remoteEntries = try await FirebaseLeaderboardStore.shared.submit(entry, to: currentLeaderboardMode)
+            _ = LocalLeaderboard.add(entry, to: currentLeaderboardMode)
+            leaderboardEntries = LocalLeaderboard.sortedEntries(
+                remoteEntries + LocalLeaderboard.load(currentLeaderboardMode)
+            ).reduce(into: [LeaderboardEntry]()) { result, item in
+                if !result.contains(where: { $0.id == item.id }) { result.append(item) }
+            }.prefix(100).map { $0 }
+        } catch {
+            print("[FirebaseLeaderboard] 端末内ランキングへ切り替え: \(error.localizedDescription)")
+            leaderboardEntries = LocalLeaderboard.add(entry, to: currentLeaderboardMode)
+        }
+
         if bestClearTime == nil || currentRunTime < bestClearTime! {
             bestClearTime = currentRunTime
             if let currentRecordKey {
                 UserDefaults.standard.set(currentRunTime, forKey: currentRecordKey)
             }
         }
-        return entry.id
+        return leaderboardEntries.contains(where: { $0.id == entry.id }) ? entry.id : nil
     }
 
     /// 登録済みランキング記録の名前だけを更新し、クリアタイムや順位の基準を保つ。
@@ -506,12 +519,20 @@ final class AppFlow: ObservableObject {
     func updateLeaderboardEntryName(id: UUID, playerName: String) async throws -> Bool {
         guard let currentLeaderboardMode else { return false }
         guard let cleanName = LeaderboardEntry.cleanedPlayerName(playerName) else { return false }
-        leaderboardEntries = try await FirebaseLeaderboardStore.shared.updateName(
-            for: id,
-            to: cleanName,
-            in: currentLeaderboardMode
-        )
-        _ = LocalLeaderboard.updateName(for: id, to: cleanName, in: currentLeaderboardMode)
+        do {
+            leaderboardEntries = try await FirebaseLeaderboardStore.shared.updateName(
+                for: id,
+                to: cleanName,
+                in: currentLeaderboardMode
+            )
+            _ = LocalLeaderboard.updateName(for: id, to: cleanName, in: currentLeaderboardMode)
+        } catch {
+            print("[FirebaseLeaderboard] 名前変更を端末内ランキングへ反映: \(error.localizedDescription)")
+            guard LocalLeaderboard.updateName(for: id, to: cleanName, in: currentLeaderboardMode) else {
+                return false
+            }
+            leaderboardEntries = LocalLeaderboard.load(currentLeaderboardMode)
+        }
         return true
     }
 
