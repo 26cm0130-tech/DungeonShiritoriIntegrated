@@ -1,4 +1,5 @@
 import FirebaseAuth
+import FirebaseCore
 import FirebaseFirestore
 import Foundation
 
@@ -6,17 +7,19 @@ enum FirebaseLeaderboardError: Error {
     case authenticationFailed
     case invalidRecord
     case recordNotOwned
+    case notConfigured
 }
 
 /// 匿名認証したプレイヤーの記録をFirestoreのモード別TOP100へ保存する。
 final class FirebaseLeaderboardStore {
     static let shared = FirebaseLeaderboardStore()
-    private let database = Firestore.firestore()
+    private var database: Firestore { Firestore.firestore() }
     private let limit = 100
 
     private init() {}
 
     func load(_ mode: LeaderboardMode) async throws -> [LeaderboardEntry] {
+        guard FirebaseApp.app() != nil else { throw FirebaseLeaderboardError.notConfigured }
         _ = try await authenticatedUserID()
         let snapshot = try await collection(for: mode)
             .order(by: "clearTime")
@@ -28,6 +31,7 @@ final class FirebaseLeaderboardStore {
     }
 
     func submit(_ entry: LeaderboardEntry, to mode: LeaderboardMode) async throws -> [LeaderboardEntry] {
+        guard FirebaseApp.app() != nil else { throw FirebaseLeaderboardError.notConfigured }
         guard entry.isValidForSubmission else { throw FirebaseLeaderboardError.invalidRecord }
         let userID = try await authenticatedUserID()
         var data: [String: Any] = [
@@ -44,6 +48,7 @@ final class FirebaseLeaderboardStore {
     }
 
     func updateName(for entryID: UUID, to name: String, in mode: LeaderboardMode) async throws -> [LeaderboardEntry] {
+        guard FirebaseApp.app() != nil else { throw FirebaseLeaderboardError.notConfigured }
         guard let cleanName = LeaderboardEntry.cleanedPlayerName(name) else {
             throw FirebaseLeaderboardError.invalidRecord
         }
