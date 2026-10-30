@@ -9,12 +9,10 @@
 /* Begin PBXBuildFile section */
 		A00000000000000000000001 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* FirebaseAuth */; };
 		A00000000000000000000002 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000004 /* FirebaseFirestore */; };
-		7F738CDA3091CC8C00467584 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7F738CD93091CC8C00467584 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		7F560A0C306A388200A76BAC /* Wagyaran.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wagyaran.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		7F738CD93091CC8C00467584 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -43,7 +41,6 @@
 			children = (
 				7F560A0E306A388200A76BAC /* Map */,
 				7F560A0D306A388200A76BAC /* Products */,
-				7F738CD93091CC8C00467584 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -124,7 +121,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7F738CDA3091CC8C00467584 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

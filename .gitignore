@@ -19,3 +19,13 @@ xcuserdata/
 # エディタ
 .idea/
 .vscode/
+
+# Firebase app configuration (download separately from Firebase Console)
+GoogleService-Info.plist
+Map/GoogleService-Info.plist
+
+# Local secrets / environment files
+.env
+.env.*
+!.env.example
+Secrets/
