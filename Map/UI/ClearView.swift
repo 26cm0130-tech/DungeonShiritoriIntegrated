@@ -15,9 +15,9 @@ struct ClearView: View {
     /// ランダムステージのテーマ。背景色の切り替えに使う(試練の迷宮・チュートリアルはnil)。
     var theme: DungeonTheme? = nil
     /// TOP100へ保存できた場合は、更新後の記録IDを返す。
-    let onSaveName: (String) -> UUID?
+    let onSaveName: (String) async throws -> UUID?
     /// 登録済み記録の名前だけを更新する。
-    let onUpdateName: (UUID, String) -> Bool
+    let onUpdateName: (UUID, String) async throws -> Bool
     /// クリア後に次のステージへ進む
     let onNextStage: () -> Void
     /// 対象モードだけ再挑戦を表示する
@@ -33,7 +33,7 @@ struct ClearView: View {
     @State private var didAttemptRegistration = false
     @State private var savedEntryID: UUID?
     @State private var didUpdateName = false
-    @State private var didFailNameUpdate = false
+    @State private var didFailRegistration = false
     @State private var registrationTask: Task<Void, Never>?
     @FocusState private var isPlayerNameFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -273,7 +273,7 @@ struct ClearView: View {
                         .submitLabel(.done)
                         .onSubmit { isPlayerNameFocused = false }
                         .onChangeCompat(of: playerName) { _, _ in
-                            didFailNameUpdate = false
+                            didFailRegistration = false
                         }
                         .padding(.horizontal, 12)
                         .frame(height: 42)
@@ -328,8 +328,8 @@ struct ClearView: View {
             Text(didAttemptRegistration ? "変更した名前をランキングへ反映しています…" : "名前とクリアタイムをランキングへ登録しています…")
                 .foregroundStyle(Color.white.opacity(0.82))
                 .transition(.opacity)
-        } else if didFailNameUpdate {
-            Label("名前を更新できませんでした。もう一度お試しください", systemImage: "exclamationmark.circle.fill")
+        } else if didFailRegistration {
+            Label("ランキングに接続できませんでした。通信を確認して再試行してください", systemImage: "exclamationmark.circle.fill")
                 .foregroundStyle(Color(red: 1.0, green: 0.72, blue: 0.62))
                 .transition(.move(edge: .top).combined(with: .opacity))
         } else if didAttemptRegistration, savedEntryID != nil,
@@ -359,28 +359,29 @@ struct ClearView: View {
 
     private func beginLeaderboardRegistration() {
         guard !isRegisteringEntry else { return }
-        let cleanName = String(playerName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(16))
-        guard !cleanName.isEmpty else { return }
-
-        let entryID: UUID?
-        let nameUpdateSucceeded: Bool?
-        if didAttemptRegistration {
-            guard let savedEntryID, hasPendingNameChange else { return }
-            nameUpdateSucceeded = onUpdateName(savedEntryID, cleanName)
-            entryID = savedEntryID
-        } else {
-            // 保存を先に完了し、画面を離れて演出Taskがキャンセルされても記録を失わない。
-            entryID = onSaveName(cleanName)
-            nameUpdateSucceeded = nil
-        }
+        guard let cleanName = LeaderboardEntry.cleanedPlayerName(playerName) else { return }
+        if didAttemptRegistration, (!hasPendingNameChange || savedEntryID == nil) { return }
 
         SoundEffectManager.shared.playButtonTap()
         isPlayerNameFocused = false
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
             isRegisteringEntry = true
         }
+        didFailRegistration = false
         registrationTask?.cancel()
         registrationTask = Task { @MainActor in
+            do {
+                let entryID: UUID?
+                let nameUpdateSucceeded: Bool?
+                if didAttemptRegistration, let savedEntryID {
+                    let didUpdate = try await onUpdateName(savedEntryID, cleanName)
+                    guard didUpdate else { throw FirebaseLeaderboardError.recordNotOwned }
+                    entryID = savedEntryID
+                    nameUpdateSucceeded = true
+                } else {
+                    entryID = try await onSaveName(cleanName)
+                    nameUpdateSucceeded = nil
+                }
             if !reduceMotion {
                 try? await Task.sleep(nanoseconds: 550_000_000)
             }
@@ -393,13 +394,19 @@ struct ClearView: View {
             playerName = cleanName
             if let nameUpdateSucceeded {
                 didUpdateName = nameUpdateSucceeded
-                didFailNameUpdate = !nameUpdateSucceeded
             }
             withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.72)) {
                 isRegisteringEntry = false
                 didAttemptRegistration = true
             }
             registrationTask = nil
+            } catch {
+                didFailRegistration = true
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+                    isRegisteringEntry = false
+                }
+                registrationTask = nil
+            }
         }
     }
 
