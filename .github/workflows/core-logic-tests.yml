@@ -37,10 +37,40 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Restore Firebase configuration from Actions secret
+        env:
+          FIREBASE_IOS_PLIST_BASE64: ${{ secrets.FIREBASE_IOS_PLIST_BASE64 }}
+        run: |
+          python3 - <<'PYCONFIG'
+          import base64
+          import os
+          import plistlib
+          from pathlib import Path
+
+          encoded = os.environ.get("FIREBASE_IOS_PLIST_BASE64", "")
+          if not encoded:
+              print("Firebase config secret is unavailable; this build will use local ranking fallback.")
+              raise SystemExit(0)
+
+          data = base64.b64decode(encoded, validate=True)
+          config = plistlib.loads(data)
+          if config.get("BUNDLE_ID") != "jp.ac.jec.cm0130.Map" or not config.get("API_KEY"):
+              raise SystemExit("Firebase plist validation failed.")
+
+          target = Path("Map/GoogleService-Info.plist")
+          target.write_bytes(data)
+          target.chmod(0o600)
+          print("Firebase config restored for this build.")
+          PYCONFIG
+
       - name: Build iOS Simulator app with iOS 16 deployment target
         env:
           BUILD_OUTPUT_DIR: ${{ runner.temp }}/wagyaran-ios-build
         run: sh Tests/build_ios_simulator.sh
+
+      - name: Remove Firebase configuration from workspace
+        if: always()
+        run: python3 -c "from pathlib import Path; Path('Map/GoogleService-Info.plist').unlink(missing_ok=True)"
 
       - name: Upload build failure diagnostics
         if: failure()
